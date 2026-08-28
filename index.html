@@ -292,9 +292,10 @@ a{color:var(--primary);}
 
 /* ---------- Print ---------- */
 @media print{
-  body *{visibility:hidden;}
-  .resume-sheet,.resume-sheet *{visibility:visible;}
-  .resume-sheet{position:absolute;top:0;left:0;box-shadow:none;width:100%;max-width:100%;padding:0.4in 0.55in;}
+  .app-header,.mobile-tabs,.panel-left,.preview-toolbar,.app-footer,#modalRoot,.toast{display:none !important;}
+  #app,.workspace,.panel-right,.preview-scroll{display:block !important;height:auto !important;min-height:0 !important;overflow:visible !important;background:none !important;}
+  .preview-scroll{padding:0;}
+  .resume-sheet{position:static;box-shadow:none;width:100%;max-width:100%;padding:0.4in 0.55in;margin:0;}
 }
 
 /* ---------- Responsive ---------- */
