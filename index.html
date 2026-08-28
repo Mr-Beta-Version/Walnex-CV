@@ -58,18 +58,27 @@ a{color:var(--primary);}
 
 /* ---------- Header ---------- */
 .app-header{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50;}
-.app-header-inner{max-width:1600px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+.app-header-inner{max-width:1600px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
 .brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;}
 .brand-mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(155deg,var(--primary),var(--primary-dark));display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--font-display);font-weight:600;font-size:17px;flex:none;}
 .brand-text{display:flex;flex-direction:column;line-height:1.15;}
 .brand-name{font-family:var(--font-display);font-weight:600;font-size:19px;color:var(--ink);letter-spacing:.2px;}
 .brand-sub{font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
-.header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+
+/* ---------- Toolbar (nav-bar style header controls) ---------- */
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.toolbar-group{display:flex;align-items:center;gap:6px;}
+.toolbar-divider{width:1px;align-self:stretch;min-height:26px;background:var(--line);flex:none;}
+
 .resume-switcher{display:flex;align-items:center;gap:6px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:4px;}
 .resume-switcher select{border:none;background:transparent;padding:6px 8px;font-size:13px;font-weight:600;color:var(--ink);max-width:180px;}
 .resume-switcher select:focus{outline:none;}
+
 .icon-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--surface);border:1px solid var(--line);color:var(--ink-soft);border-radius:var(--radius);padding:7px 10px;font-size:12.5px;font-weight:600;white-space:nowrap;}
 .icon-btn:hover{background:var(--paper);border-color:#C9CDD4;}
+.icon-btn-danger{color:var(--danger);border-color:var(--danger-soft);}
+.icon-btn-danger:hover{background:var(--danger-soft);}
+
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--radius);padding:9px 14px;font-size:13.5px;font-weight:600;border:1px solid transparent;white-space:nowrap;}
 .btn-primary{background:var(--primary);color:#fff;}
 .btn-primary:hover{background:var(--primary-dark);}
@@ -77,12 +86,22 @@ a{color:var(--primary);}
 .btn-ghost:hover{background:var(--paper);}
 .btn-sm{padding:6px 10px;font-size:12.5px;border-radius:6px;}
 .btn:disabled{opacity:.45;cursor:not-allowed;}
-.export-group{display:flex;gap:6px;border-left:1px solid var(--line);padding-left:10px;margin-left:2px;}
+.btn .caret{font-size:9px;margin-left:1px;opacity:.7;}
 
-.view-toggle{display:flex;align-items:center;gap:2px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:3px;border-left:1px solid var(--line);margin-left:2px;}
+.view-toggle{display:flex;align-items:center;gap:2px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:3px;}
 .view-toggle button{border:none;background:transparent;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:700;color:var(--ink-soft);white-space:nowrap;}
 .view-toggle button:hover{color:var(--ink);}
 .view-toggle button.active{background:var(--primary);color:#fff;}
+
+/* Dropdown menus (Resume actions / Backup & Restore) */
+.menu-wrap{position:relative;}
+.menu-panel{position:absolute;top:calc(100% + 6px);right:0;min-width:200px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);padding:6px;z-index:70;display:none;}
+.menu-panel.open{display:block;}
+.menu-item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 10px;border-radius:7px;background:none;border:none;font-size:13px;font-weight:600;color:var(--ink);}
+.menu-item:hover{background:var(--paper);}
+.menu-item.danger{color:var(--danger);}
+.menu-item.danger:hover{background:var(--danger-soft);}
+.menu-divider{height:1px;background:var(--line-soft);margin:5px 4px;}
 
 /* Desktop-only: let the view-toggle collapse either panel to full width */
 @media (min-width:981px){
@@ -163,8 +182,6 @@ a{color:var(--primary);}
 .entry-card-title{font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px;}
 .entry-card-title .num{width:20px;height:20px;border-radius:50%;background:var(--primary-soft);color:var(--primary-dark);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);}
 .entry-card-actions{display:flex;gap:6px;}
-.icon-btn-danger{color:var(--danger);border-color:var(--danger-soft);}
-.icon-btn-danger:hover{background:var(--danger-soft);}
 .add-entry-btn{width:100%;border:1.5px dashed #C7CCD4;background:var(--paper);color:var(--ink-soft);border-radius:var(--radius);padding:11px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;}
 .add-entry-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-soft);}
 
@@ -312,11 +329,11 @@ a{color:var(--primary);}
   .form-scroll{padding:6px 16px 60px;}
   .preview-scroll{padding:16px;}
   .resume-sheet{padding:30px 26px;}
-  .export-group{border-left:none;padding-left:0;margin-left:0;}
+  .toolbar-divider{display:none;}
   .view-toggle{display:none;}
 }
 @media (max-width:560px){
-  .header-actions .icon-btn span.lbl{display:none;}
+  .toolbar .icon-btn span.lbl{display:none;}
   .score-row{flex-direction:column;align-items:flex-start;}
 }
 </style>
@@ -334,29 +351,64 @@ a{color:var(--primary);}
           <span class="brand-sub">By Walnex&#8209;Technologies</span>
         </div>
       </div>
-      <div class="header-actions">
-        <label class="sr-only" for="resumeSwitcher">Resume version</label>
-        <div class="resume-switcher">
-          <select id="resumeSwitcher" aria-label="Select resume version"></select>
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <label class="sr-only" for="resumeSwitcher">Resume version</label>
+          <div class="resume-switcher">
+            <select id="resumeSwitcher" aria-label="Select resume version"></select>
+          </div>
+          <button class="icon-btn" id="btnNewResume" title="Create a new resume"><span class="lbl">+ New</span></button>
+          <div class="menu-wrap" id="resumeMenuWrap">
+            <button class="icon-btn" id="btnResumeMenu" aria-haspopup="true" aria-expanded="false" title="More resume actions">
+              <span class="lbl">Manage</span> <span class="caret" aria-hidden="true">&#9662;</span>
+            </button>
+            <div class="menu-panel" id="resumeMenuPanel" role="menu" aria-label="Resume actions">
+              <button type="button" class="menu-item" id="btnDuplicateResume" role="menuitem">Duplicate</button>
+              <button type="button" class="menu-item" id="btnRenameResume" role="menuitem">Rename</button>
+              <div class="menu-divider"></div>
+              <button type="button" class="menu-item danger" id="btnDeleteResume" role="menuitem">Delete</button>
+            </div>
+          </div>
         </div>
-        <button class="icon-btn" id="btnNewResume" title="Create a new resume"><span class="lbl">+ New</span></button>
-        <button class="icon-btn" id="btnDuplicateResume" title="Duplicate this resume"><span class="lbl">Duplicate</span></button>
-        <button class="icon-btn" id="btnRenameResume" title="Rename this resume"><span class="lbl">Rename</span></button>
-        <button class="icon-btn icon-btn-danger" id="btnDeleteResume" title="Delete this resume"><span class="lbl">Delete</span></button>
-        <div class="view-toggle" id="viewToggle" role="group" aria-label="Workspace view">
-          <button type="button" class="active" data-view="split" id="viewSplit" title="Show the form and the preview side by side">Split</button>
-          <button type="button" data-view="edit" id="viewEditOnly" title="Hide the preview and use the full width for the form">Edit only</button>
-          <button type="button" data-view="preview" id="viewPreviewOnly" title="Hide the form and use the full width for the preview">Preview only</button>
+
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-group">
+          <div class="view-toggle" id="viewToggle" role="group" aria-label="Workspace view">
+            <button type="button" class="active" data-view="split" id="viewSplit" title="Show the form and the preview side by side">Split</button>
+            <button type="button" data-view="edit" id="viewEditOnly" title="Hide the preview and use the full width for the form">Edit</button>
+            <button type="button" data-view="preview" id="viewPreviewOnly" title="Hide the form and use the full width for the preview">Preview</button>
+          </div>
         </div>
-        <div class="export-group">
-          <button class="btn btn-ghost btn-sm" id="btnBackupExport" title="Download all your resumes as a .wcv backup file">Backup</button>
-          <button class="btn btn-ghost btn-sm" id="btnBackupImport" title="Restore resumes from a .wcv backup file">Restore</button>
-          <input type="file" id="backupFileInput" accept=".wcv,application/json" style="display:none">
+
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-group">
+          <div class="menu-wrap" id="backupMenuWrap">
+            <button class="btn btn-ghost btn-sm" id="btnBackupMenu" aria-haspopup="true" aria-expanded="false" title="Backup and restore your resumes">
+              Backup <span class="caret" aria-hidden="true">&#9662;</span>
+            </button>
+            <div class="menu-panel" id="backupMenuPanel" role="menu" aria-label="Backup actions">
+              <button type="button" class="menu-item" id="btnBackupExport" role="menuitem">Download backup (.wcv)</button>
+              <button type="button" class="menu-item" id="btnBackupImport" role="menuitem">Restore from backup&hellip;</button>
+              <input type="file" id="backupFileInput" accept=".wcv,application/json" style="display:none">
+            </div>
+          </div>
         </div>
-        <div class="export-group">
+
+        <div class="toolbar-divider"></div>
+
+        <div class="toolbar-group">
           <button class="btn btn-ghost btn-sm" id="btnPrint">Print</button>
-          <button class="btn btn-ghost btn-sm" id="btnExportDocx">Export DOCX</button>
-          <button class="btn btn-primary btn-sm" id="btnExportPdf">Export PDF</button>
+          <div class="menu-wrap" id="exportMenuWrap">
+            <button class="btn btn-primary btn-sm" id="btnExportMenu" aria-haspopup="true" aria-expanded="false" title="Export your resume as a file">
+              Export <span class="caret" aria-hidden="true">&#9662;</span>
+            </button>
+            <div class="menu-panel" id="exportMenuPanel" role="menu" aria-label="Export actions">
+              <button type="button" class="menu-item" id="btnExportPdf" role="menuitem">Export as PDF</button>
+              <button type="button" class="menu-item" id="btnExportDocx" role="menuitem">Export as DOCX</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -2163,6 +2215,47 @@ function bindMobileTabs(){
   tabPreview.addEventListener('click', function(){ activate('preview'); });
 }
 
+function bindDropdownMenus(){
+  var menus = [
+    {btn:'btnResumeMenu', panel:'resumeMenuPanel'},
+    {btn:'btnBackupMenu', panel:'backupMenuPanel'},
+    {btn:'btnExportMenu', panel:'exportMenuPanel'}
+  ].map(function(m){
+    return {btn: document.getElementById(m.btn), panel: document.getElementById(m.panel)};
+  }).filter(function(m){ return m.btn && m.panel; });
+
+  if(!menus.length) return;
+
+  function closeAll(exceptPanel){
+    menus.forEach(function(m){
+      if(m.panel === exceptPanel) return;
+      m.panel.classList.remove('open');
+      m.btn.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  menus.forEach(function(m){
+    m.btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var isOpen = m.panel.classList.contains('open');
+      closeAll();
+      if(!isOpen){
+        m.panel.classList.add('open');
+        m.btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+    m.panel.addEventListener('click', function(e){
+      if(e.target.closest('.menu-item')){
+        m.panel.classList.remove('open');
+        m.btn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  });
+
+  document.addEventListener('click', function(){ closeAll(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeAll(); });
+}
+
 function bindViewToggle(){
   var group = document.getElementById('viewToggle');
   var workspace = document.getElementById('workspace');
@@ -2293,6 +2386,7 @@ function init(){
   bindJdAnalyze();
   bindMobileTabs();
   bindViewToggle();
+  bindDropdownMenus();
   bindResumeManagement();
   bindBackup();
   bindExportButtons();
