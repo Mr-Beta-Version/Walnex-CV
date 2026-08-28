@@ -122,6 +122,18 @@ a{color:var(--primary);}
 .mobile-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
 
 /* ---------- Left panel: section nav ---------- */
+.mode-toolbar{position:sticky;top:var(--sticky-modebar-top,0px);z-index:12;background:var(--surface);border-bottom:1px solid var(--line);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.mode-switch{display:inline-flex;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:3px;gap:2px;flex:none;}
+.mode-switch button{border:none;background:none;padding:5px 12px;border-radius:16px;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer;line-height:1.3;}
+.mode-switch button.active{background:var(--primary);color:#fff;}
+.wizard-step-label{font-size:12px;font-weight:700;color:var(--ink-soft);white-space:nowrap;}
+.wizard-footer{display:none;position:sticky;bottom:0;z-index:12;background:var(--surface);border-top:1px solid var(--line);padding:10px 14px;align-items:center;justify-content:space-between;gap:10px;}
+.wizard-mode .wizard-footer{display:flex;}
+.wizard-progress{font-size:12px;font-weight:600;color:var(--muted);text-align:center;flex:1;}
+.form-scroll .form-section{display:block;}
+.wizard-mode .form-section{display:none;}
+.wizard-mode .form-section.wizard-active{display:block;}
+
 .section-nav{display:flex;gap:4px;padding:10px 14px;overflow-x:auto;border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:var(--sticky-nav-top,0px);z-index:10;scrollbar-width:thin;}
 .section-nav::-webkit-scrollbar{height:4px;}
 .section-nav::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
@@ -427,6 +439,13 @@ a{color:var(--primary);}
   <div class="workspace" id="workspace">
     <!-- LEFT: FORM BUILDER -->
     <section class="panel panel-left" id="panelLeft" aria-label="Resume form builder">
+      <div class="mode-toolbar" id="modeToolbar">
+        <div class="mode-switch" id="formModeSwitch" role="group" aria-label="Form editing mode">
+          <button type="button" class="active" data-mode="full" aria-pressed="true">Full view</button>
+          <button type="button" data-mode="wizard" aria-pressed="false">Part by part</button>
+        </div>
+        <span class="wizard-step-label" id="wizardStepLabel" hidden></span>
+      </div>
       <nav class="section-nav" id="sectionNav" aria-label="Resume sections"></nav>
       <form id="main-form" class="form-scroll" novalidate>
 
@@ -595,6 +614,12 @@ a{color:var(--primary);}
           <div id="kwResults" class="kw-results" hidden></div>
         </div>
 
+        <div class="wizard-footer" id="wizardFooter">
+          <button type="button" class="btn btn-ghost btn-sm" id="wizardPrevBtn">&larr; Back</button>
+          <span class="wizard-progress" id="wizardProgress"></span>
+          <button type="button" class="btn btn-primary btn-sm" id="wizardNextBtn">Next &rarr;</button>
+        </div>
+
       </form>
     </section>
 
@@ -651,6 +676,7 @@ a{color:var(--primary);}
    ============================================================ */
 var STORAGE_KEY = 'walnexcv_app_v1';
 var VIEW_PREF_KEY = 'walnexcv_view_pref_v1';
+var FORM_MODE_KEY = 'walnexcv_form_mode_v1';
 
 var ACTION_VERBS = ["Led","Built","Launched","Drove","Delivered","Architected","Designed","Implemented","Reduced","Increased","Optimized","Streamlined","Negotiated","Spearheaded","Automated","Directed","Coordinated","Established","Improved","Generated","Managed","Developed","Executed","Transformed","Accelerated","Restructured","Mentored","Scaled","Resolved","Piloted"];
 
@@ -2159,11 +2185,15 @@ function bindTemplateRow(){
 function updateStickyOffsets(){
   var header = document.querySelector('.app-header');
   var mobileTabs = document.querySelector('.mobile-tabs');
+  var modeToolbar = document.getElementById('modeToolbar');
   var nav = document.getElementById('sectionNav');
   var headerH = header ? header.offsetHeight : 0;
   var mobileTabsH = (mobileTabs && getComputedStyle(mobileTabs).display !== 'none') ? mobileTabs.offsetHeight : 0;
-  var navTop = headerH + mobileTabsH;
+  var modebarTop = headerH + mobileTabsH;
+  var modeToolbarH = modeToolbar ? modeToolbar.offsetHeight : 0;
+  var navTop = modebarTop + modeToolbarH;
   var navH = nav ? nav.offsetHeight : 0;
+  document.documentElement.style.setProperty('--sticky-modebar-top', modebarTop + 'px');
   document.documentElement.style.setProperty('--sticky-nav-top', navTop + 'px');
   document.documentElement.style.setProperty('--sticky-content-offset', (navTop + navH + 14) + 'px');
 }
@@ -2178,22 +2208,94 @@ function getFormScrollContainer(){
   return null;
 }
 
+var formViewMode = 'full'; // 'full' | 'wizard'
+
+// Single entry point for moving to a section, used by pill clicks, the
+// Prev/Next wizard buttons, and (indirectly) the scroll-spy. Keeps the
+// pill highlight, the wizard step visibility, and scrolling in sync.
+function activateSection(id, scrollBehavior){
+  currentSectionId = id;
+  renderSectionNav();
+  renderWizardState();
+  if(scrollBehavior){
+    var target = document.getElementById('sec-'+id);
+    if(target) target.scrollIntoView({behavior:scrollBehavior, block:'start'});
+  }
+}
+
+function renderWizardState(){
+  var stepLabel = document.getElementById('wizardStepLabel');
+  var prevBtn = document.getElementById('wizardPrevBtn');
+  var nextBtn = document.getElementById('wizardNextBtn');
+  var progress = document.getElementById('wizardProgress');
+  var idx = SECTIONS.findIndex(function(s){ return s.id === currentSectionId; });
+  if(idx < 0) idx = 0;
+
+  if(formViewMode === 'wizard'){
+    qsa('.form-section').forEach(function(sec){
+      sec.classList.toggle('wizard-active', sec.getAttribute('data-sec') === currentSectionId);
+    });
+    if(stepLabel){ stepLabel.hidden = false; stepLabel.textContent = 'Step ' + (idx+1) + ' of ' + SECTIONS.length; }
+    if(prevBtn) prevBtn.disabled = idx <= 0;
+    if(nextBtn) nextBtn.disabled = idx >= SECTIONS.length - 1;
+    if(progress) progress.textContent = (idx+1) + ' / ' + SECTIONS.length + ' \u00b7 ' + SECTIONS[idx].label;
+  } else {
+    if(stepLabel) stepLabel.hidden = true;
+  }
+}
+
+function setFormMode(mode){
+  formViewMode = (mode === 'wizard') ? 'wizard' : 'full';
+  var form = document.getElementById('main-form');
+  if(form) form.classList.toggle('wizard-mode', formViewMode === 'wizard');
+  qsa('#formModeSwitch button').forEach(function(b){
+    var active = b.getAttribute('data-mode') === formViewMode;
+    b.classList.toggle('active', active);
+    b.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  try{ localStorage.setItem(FORM_MODE_KEY, formViewMode); }catch(e){}
+  renderWizardState();
+  updateStickyOffsets();
+}
+
+function bindFormModeToggle(){
+  var wrap = document.getElementById('formModeSwitch');
+  if(wrap){
+    wrap.addEventListener('click', function(e){
+      var btn = e.target.closest('[data-mode]');
+      if(!btn) return;
+      setFormMode(btn.getAttribute('data-mode'));
+    });
+  }
+  var prevBtn = document.getElementById('wizardPrevBtn');
+  var nextBtn = document.getElementById('wizardNextBtn');
+  if(prevBtn) prevBtn.addEventListener('click', function(){
+    var idx = SECTIONS.findIndex(function(s){ return s.id === currentSectionId; });
+    if(idx > 0) activateSection(SECTIONS[idx-1].id, 'smooth');
+  });
+  if(nextBtn) nextBtn.addEventListener('click', function(){
+    var idx = SECTIONS.findIndex(function(s){ return s.id === currentSectionId; });
+    if(idx < SECTIONS.length - 1) activateSection(SECTIONS[idx+1].id, 'smooth');
+  });
+  var saved = 'full';
+  try{ saved = localStorage.getItem(FORM_MODE_KEY) || 'full'; }catch(e){}
+  setFormMode(saved);
+}
+
 function bindSectionNav(){
   document.getElementById('sectionNav').addEventListener('click', function(e){
     var pill = e.target.closest('[data-nav]');
     if(!pill) return;
-    var id = pill.getAttribute('data-nav');
-    currentSectionId = id;
-    renderSectionNav();
-    var target = document.getElementById('sec-'+id);
-    if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+    activateSection(pill.getAttribute('data-nav'), 'smooth');
   });
 
   // Track scroll position to highlight active pill. Bound to both the
   // panel's own scroll container (desktop split view) and the window
   // (mobile / stacked layout, where the page itself scrolls) since
-  // getBoundingClientRect() is viewport-relative either way.
+  // getBoundingClientRect() is viewport-relative either way. Skipped in
+  // wizard mode, where only one section is ever on screen at a time.
   var onScroll = debounce(function(){
+    if(formViewMode === 'wizard') return;
     var container = getFormScrollContainer();
     var sections = container ? qsa('.form-section', container) : qsa('.form-section');
     var threshold = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sticky-content-offset')) || 70) + 20;
@@ -2216,9 +2318,11 @@ function bindSectionNav(){
     var ro = new ResizeObserver(debounce(updateStickyOffsets, 60));
     var header = document.querySelector('.app-header');
     var mobileTabs = document.querySelector('.mobile-tabs');
+    var modeToolbar = document.getElementById('modeToolbar');
     var nav = document.getElementById('sectionNav');
     if(header) ro.observe(header);
     if(mobileTabs) ro.observe(mobileTabs);
+    if(modeToolbar) ro.observe(modeToolbar);
     if(nav) ro.observe(nav);
   }
 }
@@ -2435,6 +2539,7 @@ function init(){
   bindLanguages();
   bindTemplateRow();
   bindSectionNav();
+  bindFormModeToggle();
   bindIssuesToggle();
   bindJdAnalyze();
   bindMobileTabs();
