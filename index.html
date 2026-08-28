@@ -88,19 +88,17 @@ a{color:var(--primary);}
 .btn:disabled{opacity:.45;cursor:not-allowed;}
 .btn .caret{font-size:9px;margin-left:1px;opacity:.7;}
 
-.view-toggle{display:flex;align-items:center;gap:2px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:3px;}
-.view-toggle button{border:none;background:transparent;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:700;color:var(--ink-soft);white-space:nowrap;}
-.view-toggle button:hover{color:var(--ink);}
-.view-toggle button.active{background:var(--primary);color:#fff;}
-
-/* Dropdown menus (Resume actions / Backup & Restore) */
+/* Dropdown menus (Resume actions / View / Backup & Restore / Export) */
 .menu-wrap{position:relative;}
 .menu-panel{position:absolute;top:calc(100% + 6px);right:0;min-width:200px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-lg);box-shadow:var(--shadow-md);padding:6px;z-index:70;display:none;}
 .menu-panel.open{display:block;}
-.menu-item{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:8px 10px;border-radius:7px;background:none;border:none;font-size:13px;font-weight:600;color:var(--ink);}
+.menu-item{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;padding:8px 10px;border-radius:7px;background:none;border:none;font-size:13px;font-weight:600;color:var(--ink);}
 .menu-item:hover{background:var(--paper);}
 .menu-item.danger{color:var(--danger);}
 .menu-item.danger:hover{background:var(--danger-soft);}
+.menu-item .menu-check{opacity:0;font-size:12px;color:var(--primary);flex:none;}
+.menu-item[aria-checked="true"]{color:var(--primary-dark);}
+.menu-item[aria-checked="true"] .menu-check{opacity:1;}
 .menu-divider{height:1px;background:var(--line-soft);margin:5px 4px;}
 
 /* Desktop-only: let the view-toggle collapse either panel to full width */
@@ -330,7 +328,7 @@ a{color:var(--primary);}
   .preview-scroll{padding:16px;}
   .resume-sheet{padding:30px 26px;}
   .toolbar-divider{display:none;}
-  .view-toggle{display:none;}
+  .view-group{display:none;}
 }
 @media (max-width:560px){
   .toolbar .icon-btn span.lbl{display:none;}
@@ -373,11 +371,16 @@ a{color:var(--primary);}
 
         <div class="toolbar-divider"></div>
 
-        <div class="toolbar-group">
-          <div class="view-toggle" id="viewToggle" role="group" aria-label="Workspace view">
-            <button type="button" class="active" data-view="split" id="viewSplit" title="Show the form and the preview side by side">Split</button>
-            <button type="button" data-view="edit" id="viewEditOnly" title="Hide the preview and use the full width for the form">Edit</button>
-            <button type="button" data-view="preview" id="viewPreviewOnly" title="Hide the form and use the full width for the preview">Preview</button>
+        <div class="toolbar-group view-group">
+          <div class="menu-wrap" id="viewMenuWrap">
+            <button class="btn btn-ghost btn-sm" id="btnViewMenu" aria-haspopup="true" aria-expanded="false" title="Change workspace view">
+              <span id="viewMenuLabel">View: Split</span> <span class="caret" aria-hidden="true">&#9662;</span>
+            </button>
+            <div class="menu-panel" id="viewMenuPanel" role="menu" aria-label="Workspace view">
+              <button type="button" class="menu-item" data-view="split" id="viewSplit" role="menuitemradio" aria-checked="true" title="Show the form and the preview side by side">Split <span class="menu-check" aria-hidden="true">&#10003;</span></button>
+              <button type="button" class="menu-item" data-view="edit" id="viewEditOnly" role="menuitemradio" aria-checked="false" title="Hide the preview and use the full width for the form">Edit only <span class="menu-check" aria-hidden="true">&#10003;</span></button>
+              <button type="button" class="menu-item" data-view="preview" id="viewPreviewOnly" role="menuitemradio" aria-checked="false" title="Hide the form and use the full width for the preview">Preview only <span class="menu-check" aria-hidden="true">&#10003;</span></button>
+            </div>
           </div>
         </div>
 
@@ -2218,6 +2221,7 @@ function bindMobileTabs(){
 function bindDropdownMenus(){
   var menus = [
     {btn:'btnResumeMenu', panel:'resumeMenuPanel'},
+    {btn:'btnViewMenu', panel:'viewMenuPanel'},
     {btn:'btnBackupMenu', panel:'backupMenuPanel'},
     {btn:'btnExportMenu', panel:'exportMenuPanel'}
   ].map(function(m){
@@ -2257,19 +2261,25 @@ function bindDropdownMenus(){
 }
 
 function bindViewToggle(){
-  var group = document.getElementById('viewToggle');
+  var panel = document.getElementById('viewMenuPanel');
   var workspace = document.getElementById('workspace');
-  if(!group || !workspace) return;
-  var buttons = qsa('button[data-view]', group);
+  var labelEl = document.getElementById('viewMenuLabel');
+  if(!panel || !workspace) return;
+  var buttons = qsa('button[data-view]', panel);
+  var VIEW_LABELS = {split:'View: Split', edit:'View: Edit only', preview:'View: Preview only'};
   function setView(view){
     workspace.classList.remove('view-edit','view-preview');
     if(view==='edit') workspace.classList.add('view-edit');
     else if(view==='preview') workspace.classList.add('view-preview');
     else view = 'split';
-    buttons.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view')===view); });
+    buttons.forEach(function(b){
+      var active = b.getAttribute('data-view')===view;
+      b.setAttribute('aria-checked', active ? 'true' : 'false');
+    });
+    if(labelEl) labelEl.textContent = VIEW_LABELS[view] || VIEW_LABELS.split;
     try{ localStorage.setItem(VIEW_PREF_KEY, view); }catch(e){}
   }
-  group.addEventListener('click', function(e){
+  panel.addEventListener('click', function(e){
     var btn = e.target.closest('button[data-view]');
     if(!btn) return;
     setView(btn.getAttribute('data-view'));
