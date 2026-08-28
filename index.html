@@ -79,6 +79,19 @@ a{color:var(--primary);}
 .btn:disabled{opacity:.45;cursor:not-allowed;}
 .export-group{display:flex;gap:6px;border-left:1px solid var(--line);padding-left:10px;margin-left:2px;}
 
+.view-toggle{display:flex;align-items:center;gap:2px;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:3px;border-left:1px solid var(--line);margin-left:2px;}
+.view-toggle button{border:none;background:transparent;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:700;color:var(--ink-soft);white-space:nowrap;}
+.view-toggle button:hover{color:var(--ink);}
+.view-toggle button.active{background:var(--primary);color:#fff;}
+
+/* Desktop-only: let the view-toggle collapse either panel to full width */
+@media (min-width:981px){
+  .workspace.view-edit .panel-right{display:none;}
+  .workspace.view-edit .panel-left{flex:1 1 100%;max-width:100%;border-right:none;}
+  .workspace.view-preview .panel-left{display:none;}
+  .workspace.view-preview .panel-right{flex:1 1 100%;max-width:100%;}
+}
+
 /* ---------- Layout ---------- */
 .workspace{flex:1;display:flex;max-width:1680px;width:100%;margin:0 auto;gap:0;min-height:0;}
 .panel{min-width:0;}
@@ -299,6 +312,7 @@ a{color:var(--primary);}
   .preview-scroll{padding:16px;}
   .resume-sheet{padding:30px 26px;}
   .export-group{border-left:none;padding-left:0;margin-left:0;}
+  .view-toggle{display:none;}
 }
 @media (max-width:560px){
   .header-actions .icon-btn span.lbl{display:none;}
@@ -328,6 +342,11 @@ a{color:var(--primary);}
         <button class="icon-btn" id="btnDuplicateResume" title="Duplicate this resume"><span class="lbl">Duplicate</span></button>
         <button class="icon-btn" id="btnRenameResume" title="Rename this resume"><span class="lbl">Rename</span></button>
         <button class="icon-btn icon-btn-danger" id="btnDeleteResume" title="Delete this resume"><span class="lbl">Delete</span></button>
+        <div class="view-toggle" id="viewToggle" role="group" aria-label="Workspace view">
+          <button type="button" class="active" data-view="split" id="viewSplit" title="Show the form and the preview side by side">Split</button>
+          <button type="button" data-view="edit" id="viewEditOnly" title="Hide the preview and use the full width for the form">Edit only</button>
+          <button type="button" data-view="preview" id="viewPreviewOnly" title="Hide the form and use the full width for the preview">Preview only</button>
+        </div>
         <div class="export-group">
           <button class="btn btn-ghost btn-sm" id="btnBackupExport" title="Download all your resumes as a .wcv backup file">Backup</button>
           <button class="btn btn-ghost btn-sm" id="btnBackupImport" title="Restore resumes from a .wcv backup file">Restore</button>
@@ -349,7 +368,7 @@ a{color:var(--primary);}
     </div>
   </div>
 
-  <div class="workspace">
+  <div class="workspace" id="workspace">
     <!-- LEFT: FORM BUILDER -->
     <section class="panel panel-left" id="panelLeft" aria-label="Resume form builder">
       <nav class="section-nav" id="sectionNav" aria-label="Resume sections"></nav>
@@ -575,6 +594,7 @@ a{color:var(--primary);}
    CONSTANTS
    ============================================================ */
 var STORAGE_KEY = 'walnexcv_app_v1';
+var VIEW_PREF_KEY = 'walnexcv_view_pref_v1';
 
 var ACTION_VERBS = ["Led","Built","Launched","Drove","Delivered","Architected","Designed","Implemented","Reduced","Increased","Optimized","Streamlined","Negotiated","Spearheaded","Automated","Directed","Coordinated","Established","Improved","Generated","Managed","Developed","Executed","Transformed","Accelerated","Restructured","Mentored","Scaled","Resolved","Piloted"];
 
@@ -2142,6 +2162,29 @@ function bindMobileTabs(){
   tabPreview.addEventListener('click', function(){ activate('preview'); });
 }
 
+function bindViewToggle(){
+  var group = document.getElementById('viewToggle');
+  var workspace = document.getElementById('workspace');
+  if(!group || !workspace) return;
+  var buttons = qsa('button[data-view]', group);
+  function setView(view){
+    workspace.classList.remove('view-edit','view-preview');
+    if(view==='edit') workspace.classList.add('view-edit');
+    else if(view==='preview') workspace.classList.add('view-preview');
+    else view = 'split';
+    buttons.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-view')===view); });
+    try{ localStorage.setItem(VIEW_PREF_KEY, view); }catch(e){}
+  }
+  group.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-view]');
+    if(!btn) return;
+    setView(btn.getAttribute('data-view'));
+  });
+  var saved = 'split';
+  try{ saved = localStorage.getItem(VIEW_PREF_KEY) || 'split'; }catch(e){}
+  setView(saved);
+}
+
 function bindResumeManagement(){
   document.getElementById('resumeSwitcher').addEventListener('change', function(e){
     State.activeId = e.target.value;
@@ -2248,6 +2291,7 @@ function init(){
   bindIssuesToggle();
   bindJdAnalyze();
   bindMobileTabs();
+  bindViewToggle();
   bindResumeManagement();
   bindBackup();
   bindExportButtons();
