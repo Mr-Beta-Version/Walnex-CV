@@ -329,6 +329,11 @@ a{color:var(--primary);}
         <button class="icon-btn" id="btnRenameResume" title="Rename this resume"><span class="lbl">Rename</span></button>
         <button class="icon-btn icon-btn-danger" id="btnDeleteResume" title="Delete this resume"><span class="lbl">Delete</span></button>
         <div class="export-group">
+          <button class="btn btn-ghost btn-sm" id="btnBackupExport" title="Download all your resumes as a .wcv backup file">Backup</button>
+          <button class="btn btn-ghost btn-sm" id="btnBackupImport" title="Restore resumes from a .wcv backup file">Restore</button>
+          <input type="file" id="backupFileInput" accept=".wcv,application/json" style="display:none">
+        </div>
+        <div class="export-group">
           <button class="btn btn-ghost btn-sm" id="btnPrint">Print</button>
           <button class="btn btn-ghost btn-sm" id="btnExportDocx">Export DOCX</button>
           <button class="btn btn-primary btn-sm" id="btnExportPdf">Export PDF</button>
@@ -1474,6 +1479,110 @@ function resumeFileBase(r){
 }
 
 /* ============================================================
+   BACKUP / RESTORE (.wcv — plain JSON, all resumes in this browser)
+   ============================================================ */
+var WCV_FORMAT = 'walnexcv-backup';
+var WCV_VERSION = 1;
+var REQUIRED_ARRAY_KEYS = ['experience','education','projects','certifications','languages','skills'];
+
+function downloadTextFile(filename, text, mime){
+  var blob = new Blob([text], {type: mime || 'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+
+/* Export every resume stored in this browser as a single .wcv backup file */
+function exportBackup(){
+  var payload = {
+    format: WCV_FORMAT,
+    version: WCV_VERSION,
+    exportedAt: Date.now(),
+    activeId: State.activeId,
+    resumes: State.resumes
+  };
+  var stamp = new Date().toISOString().slice(0,10);
+  downloadTextFile('walnexcv-backup-' + stamp + '.wcv', JSON.stringify(payload, null, 2));
+  showToast('Backup saved \u2014 walnexcv-backup-' + stamp + '.wcv');
+}
+
+function normalizeImportedResume(raw){
+  var copy = JSON.parse(JSON.stringify(raw));
+  copy.id = uid();
+  copy.name = copy.name || 'Restored Resume';
+  copy.template = copy.template || 'professional';
+  copy.createdAt = copy.createdAt || Date.now();
+  copy.updatedAt = Date.now();
+  copy.personal = Object.assign({fullName:'',title:'',phone:'',email:'',location:'',linkedin:'',portfolio:'',github:''}, copy.personal || {});
+  copy.additional = Object.assign({awards:'',publications:'',volunteer:'',interests:''}, copy.additional || {});
+  copy.summary = copy.summary || '';
+  REQUIRED_ARRAY_KEYS.forEach(function(key){
+    if(!Array.isArray(copy[key])) copy[key] = [];
+    copy[key].forEach(function(item){ item.id = uid(); });
+  });
+  return copy;
+}
+
+function triggerBackupImport(){
+  document.getElementById('backupFileInput').click();
+}
+
+function handleBackupFile(file){
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var parsed;
+    try{
+      parsed = JSON.parse(e.target.result);
+    }catch(err){
+      showToast('That file isn\u2019t a valid .wcv backup (bad JSON)');
+      return;
+    }
+    var incoming = [];
+    if(parsed && Array.isArray(parsed.resumes)){
+      incoming = parsed.resumes;
+    } else if(parsed && parsed.personal){
+      incoming = [parsed];
+    }
+    if(!incoming.length){
+      showToast('That file isn\u2019t a valid .wcv backup');
+      return;
+    }
+    openModal({
+      title:'Restore Backup',
+      message:'Found ' + incoming.length + ' resume' + (incoming.length===1?'':'s') + ' in this file. They\u2019ll be added as new resumes \u2014 nothing you already have will be changed or overwritten.',
+      confirmLabel:'Import',
+      onConfirm:function(){
+        var imported = incoming.map(normalizeImportedResume);
+        imported.forEach(function(r){ State.resumes.push(r); });
+        State.activeId = imported[imported.length-1].id;
+        lastKwMatch = null;
+        save();
+        fullRerenderForResumeSwitch();
+        showToast(imported.length + ' resume' + (imported.length===1?'':'s') + ' restored from backup');
+      }
+    });
+  };
+  reader.onerror = function(){ showToast('Could not read that file'); };
+  reader.readAsText(file);
+}
+
+function bindBackup(){
+  document.getElementById('btnBackupExport').addEventListener('click', exportBackup);
+  document.getElementById('btnBackupImport').addEventListener('click', triggerBackupImport);
+  document.getElementById('backupFileInput').addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    handleBackupFile(file);
+    e.target.value = '';
+  });
+}
+
+/* ============================================================
    PDF EXPORT (jsPDF — real selectable text, ATS-safe single column)
    ============================================================ */
 function exportPdf(){
@@ -2140,6 +2249,7 @@ function init(){
   bindJdAnalyze();
   bindMobileTabs();
   bindResumeManagement();
+  bindBackup();
   bindExportButtons();
   fullRerenderForResumeSwitch();
 }
