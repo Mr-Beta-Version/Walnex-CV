@@ -193,6 +193,37 @@ body.split-resizing .panel-left,body.split-resizing .panel-right{pointer-events:
 .checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--ink-soft);}
 .checkbox-row input{width:16px;height:16px;}
 
+/* ---------- Profile photo (optional) ---------- */
+.photo-field{margin-top:2px;margin-bottom:6px;padding-top:14px;border-top:1px dashed var(--line);}
+.photo-field-head label{font-size:12px;font-weight:700;color:var(--ink-soft);display:flex;align-items:center;gap:8px;}
+.photo-field-hint{font-size:11.5px;color:var(--muted);margin-top:3px;max-width:52ch;line-height:1.5;}
+.photo-field-body{display:flex;gap:16px;align-items:flex-start;margin-top:12px;flex-wrap:wrap;}
+.photo-preview-wrap{flex:none;}
+.photo-preview{width:88px;height:88px;background:var(--paper);border:1.5px dashed var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;transition:border-radius .15s ease;}
+.photo-preview.shape-square{border-radius:6px;}
+.photo-preview.shape-rounded{border-radius:20%;}
+.photo-preview.shape-circle{border-radius:50%;}
+.photo-preview img{width:100%;height:100%;object-fit:cover;display:block;}
+.photo-preview-empty{font-size:10.5px;color:var(--muted);text-align:center;padding:4px;font-weight:600;}
+.photo-controls{flex:1;min-width:220px;display:flex;flex-direction:column;gap:12px;}
+.photo-upload-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.photo-mini-label{font-size:11px;font-weight:700;color:var(--ink-soft);width:44px;flex:none;}
+.photo-shape-row,.photo-size-row{display:flex;align-items:center;gap:10px;}
+.photo-shape-switch{display:inline-flex;background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:3px;gap:2px;}
+.photo-shape-switch button{border:none;background:none;padding:5px 12px;border-radius:16px;font-size:12px;font-weight:600;color:var(--ink-soft);cursor:pointer;line-height:1.3;}
+.photo-shape-switch button.active{background:var(--primary);color:#fff;}
+.photo-size-row input[type=range]{flex:1;max-width:160px;accent-color:var(--primary);}
+.photo-size-value{font-family:var(--font-mono);font-size:11.5px;color:var(--muted);width:42px;flex:none;}
+.photo-field.has-photo .photo-preview{border-style:solid;}
+
+/* ---------- Resume preview header w/ photo ---------- */
+.rs-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;}
+.rs-header-text{flex:1;min-width:0;}
+.rs-photo{flex:none;object-fit:cover;display:block;box-shadow:0 0 0 1px rgba(0,0,0,.06);}
+.rs-photo.shape-square{border-radius:6px;}
+.rs-photo.shape-rounded{border-radius:16%;}
+.rs-photo.shape-circle{border-radius:50%;}
+
 /* skills */
 .skill-input-row{display:flex;gap:8px;margin-bottom:10px;}
 .skill-input-row input{flex:1;}
@@ -486,6 +517,41 @@ body.split-resizing .panel-left,body.split-resizing .panel-right{pointer-events:
             <div class="field"><label for="pLinkedin">LinkedIn URL <span class="opt">optional</span></label><input type="url" id="pLinkedin" data-field="linkedin" placeholder="linkedin.com/in/jordanalvarez"></div>
             <div class="field"><label for="pPortfolio">Portfolio Website <span class="opt">optional</span></label><input type="url" id="pPortfolio" data-field="portfolio" placeholder="jordanalvarez.com"></div>
             <div class="field"><label for="pGithub">GitHub URL <span class="opt">optional</span></label><input type="url" id="pGithub" data-field="github" placeholder="github.com/jalvarez"></div>
+          </div>
+
+          <div class="photo-field" id="photoField">
+            <div class="photo-field-head">
+              <label>Profile Photo <span class="opt">optional</span></label>
+              <p class="photo-field-hint">Shown in the on-screen preview and PDF export. Skipped in the Word export, and many recruiters (especially in the US) recommend leaving it off for ATS-scanned applications — use your judgment for your market.</p>
+            </div>
+            <div class="photo-field-body">
+              <div class="photo-preview-wrap">
+                <div class="photo-preview shape-circle" id="photoPreview">
+                  <img id="photoPreviewImg" alt="" hidden>
+                  <span class="photo-preview-empty" id="photoPreviewEmpty">No photo</span>
+                </div>
+              </div>
+              <div class="photo-controls">
+                <div class="photo-upload-row">
+                  <button type="button" class="btn btn-ghost btn-sm" id="btnUploadPhoto">Upload photo</button>
+                  <button type="button" class="icon-btn icon-btn-danger btn-sm" id="btnRemovePhoto" hidden>Remove</button>
+                  <input type="file" id="photoFileInput" accept="image/png,image/jpeg,image/webp" class="sr-only">
+                </div>
+                <div class="photo-shape-row">
+                  <span class="photo-mini-label">Shape</span>
+                  <div class="photo-shape-switch" id="photoShapeSwitch" role="group" aria-label="Photo shape">
+                    <button type="button" data-shape="square">Square</button>
+                    <button type="button" data-shape="rounded">Rounded</button>
+                    <button type="button" data-shape="circle" class="active">Circle</button>
+                  </div>
+                </div>
+                <div class="photo-size-row">
+                  <span class="photo-mini-label">Size</span>
+                  <input type="range" id="photoSizeRange" min="56" max="160" step="4" value="96" aria-label="Photo size">
+                  <span class="photo-size-value" id="photoSizeValue">96px</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -789,6 +855,7 @@ function newResume(name){
     createdAt: Date.now(),
     updatedAt: Date.now(),
     personal:{fullName:'',title:'',phone:'',email:'',location:'',linkedin:'',portfolio:'',github:''},
+    photo:{dataUrl:null, shape:'circle', size:96},
     summary:'',
     skills:[],
     experience:[],
@@ -866,6 +933,14 @@ function activeResume(){
 }
 function touch(r){ r.updatedAt = Date.now(); }
 
+function normalizePhotoField(r){
+  r.photo = Object.assign({dataUrl:null, shape:'circle', size:96}, r.photo || {});
+  if(['square','rounded','circle'].indexOf(r.photo.shape) === -1) r.photo.shape = 'circle';
+  var sz = parseInt(r.photo.size, 10);
+  r.photo.size = (isFinite(sz) && sz >= 56 && sz <= 160) ? sz : 96;
+  return r;
+}
+
 function loadState(){
   try{
     var raw = localStorage.getItem(STORAGE_KEY);
@@ -873,6 +948,7 @@ function loadState(){
       var parsed = JSON.parse(raw);
       if(parsed && parsed.resumes && parsed.resumes.length){
         State.resumes = parsed.resumes;
+        State.resumes.forEach(normalizePhotoField);
         State.activeId = parsed.activeId || parsed.resumes[0].id;
         return;
       }
@@ -1181,6 +1257,42 @@ function renderStaticFields(){
   document.getElementById('jdText').value = '';
   document.getElementById('kwResults').hidden = true;
   updateSummaryCounter();
+  renderPhotoControls();
+}
+
+function renderPhotoControls(){
+  var r = activeResume();
+  var photo = r.photo || {dataUrl:null, shape:'circle', size:96};
+  var field = document.getElementById('photoField');
+  var previewBox = document.getElementById('photoPreview');
+  var img = document.getElementById('photoPreviewImg');
+  var empty = document.getElementById('photoPreviewEmpty');
+  var removeBtn = document.getElementById('btnRemovePhoto');
+  var sizeRange = document.getElementById('photoSizeRange');
+  var sizeValue = document.getElementById('photoSizeValue');
+
+  previewBox.classList.remove('shape-square','shape-rounded','shape-circle');
+  previewBox.classList.add('shape-' + photo.shape);
+  field.classList.toggle('has-photo', !!photo.dataUrl);
+
+  if(photo.dataUrl){
+    img.src = photo.dataUrl;
+    img.hidden = false;
+    empty.hidden = true;
+    removeBtn.hidden = false;
+  } else {
+    img.hidden = true;
+    img.removeAttribute('src');
+    empty.hidden = false;
+    removeBtn.hidden = true;
+  }
+
+  qsa('#photoShapeSwitch button').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-shape') === photo.shape);
+  });
+
+  sizeRange.value = photo.size;
+  sizeValue.textContent = photo.size + 'px';
 }
 
 function updateSummaryCounter(){
@@ -1424,9 +1536,21 @@ function renderResumePreview(){
   if(p.github) contactBits.push('<span>'+escapeHtml(p.github)+'</span>');
 
   var html = '';
-  html += '<div class="rs-name">' + (p.fullName ? escapeHtml(p.fullName) : '<span class="rs-empty">Your Name</span>') + '</div>';
-  if(p.title) html += '<div class="rs-title">' + escapeHtml(p.title) + '</div>';
-  html += '<div class="rs-contact">' + (contactBits.length ? contactBits.join('') : '<span class="rs-empty">Add contact details to complete your header</span>') + '</div>';
+  var headerText = '';
+  headerText += '<div class="rs-name">' + (p.fullName ? escapeHtml(p.fullName) : '<span class="rs-empty">Your Name</span>') + '</div>';
+  if(p.title) headerText += '<div class="rs-title">' + escapeHtml(p.title) + '</div>';
+  headerText += '<div class="rs-contact">' + (contactBits.length ? contactBits.join('') : '<span class="rs-empty">Add contact details to complete your header</span>') + '</div>';
+
+  var photo = r.photo || {};
+  if(photo.dataUrl){
+    var pSize = photo.size || 96;
+    html += '<div class="rs-header">';
+    html += '<div class="rs-header-text">' + headerText + '</div>';
+    html += '<img class="rs-photo shape-' + escapeHtml(photo.shape||'circle') + '" src="' + photo.dataUrl + '" alt="Profile photo" style="width:' + pSize + 'px;height:' + pSize + 'px;">';
+    html += '</div>';
+  } else {
+    html += headerText;
+  }
 
   var sections = buildResumeSections(r);
   if(sections.length===0){
@@ -1650,6 +1774,7 @@ function normalizeImportedResume(raw){
   copy.createdAt = copy.createdAt || Date.now();
   copy.updatedAt = Date.now();
   copy.personal = Object.assign({fullName:'',title:'',phone:'',email:'',location:'',linkedin:'',portfolio:'',github:''}, copy.personal || {});
+  normalizePhotoField(copy);
   copy.additional = Object.assign({awards:'',publications:'',volunteer:'',interests:''}, copy.additional || {});
   copy.summary = copy.summary || '';
   REQUIRED_ARRAY_KEYS.forEach(function(key){
@@ -1757,16 +1882,47 @@ function exportPdf(){
   }
 
   var p = r.personal;
+  var photo = r.photo || {};
+  var headerRightEdge = pageW - marginX;
+  var textMaxW = maxW;
+  var photoDrawSize = 0;
+  if(photo.dataUrl){
+    photoDrawSize = Math.max(46, Math.min(96, Math.round((photo.size||96) * 0.72)));
+    textMaxW = maxW - photoDrawSize - 16;
+  }
+  function wrapText(text, size, indent){
+    doc.setFontSize(size);
+    return doc.splitTextToSize(text, textMaxW - (indent||0));
+  }
   doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor('#111111');
   doc.text(p.fullName || 'Your Name', marginX, y); y += 22;
   if(p.title){ doc.setFont('helvetica','normal'); doc.setFontSize(12); doc.setTextColor('#39434f'); doc.text(p.title, marginX, y); y += 16; }
   var contactBits = [p.phone, p.email, p.location, p.linkedin, p.portfolio, p.github].filter(Boolean);
   if(contactBits.length){
     var contactLine = contactBits.join('   \u00b7   ');
-    var cLines = wrap(contactLine, 9.5);
+    var cLines = wrapText(contactLine, 9.5);
     doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor('#3d4652');
     cLines.forEach(function(l){ ensureSpace(13); doc.text(l, marginX, y); y += 13; });
   }
+
+  if(photo.dataUrl){
+    try{
+      var px = headerRightEdge - photoDrawSize, py = marginTop - 4;
+      doc.saveGraphicsState();
+      if(photo.shape === 'circle'){
+        doc.circle(px + photoDrawSize/2, py + photoDrawSize/2, photoDrawSize/2, null);
+      } else if(photo.shape === 'rounded'){
+        doc.roundedRect(px, py, photoDrawSize, photoDrawSize, photoDrawSize*0.16, photoDrawSize*0.16, null);
+      } else {
+        doc.roundedRect(px, py, photoDrawSize, photoDrawSize, 3, 3, null);
+      }
+      doc.clip();
+      doc.discardPath();
+      doc.addImage(photo.dataUrl, 'JPEG', px, py, photoDrawSize, photoDrawSize);
+      doc.restoreGraphicsState();
+    }catch(err){ /* if clipping isn't supported, skip the photo rather than break export */ }
+  }
+
   y += 6;
 
   var sections = buildResumeSections(r);
@@ -1998,6 +2154,95 @@ function bindStaticFields(){
       touch(r); save();
       renderPreviewAndScore();
     });
+  });
+}
+
+var PHOTO_MAX_SOURCE_BYTES = 8 * 1024 * 1024; // 8MB raw upload guard
+var PHOTO_STORE_DIM = 320; // px, square-cropped storage resolution
+
+function readImageFile(file){
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var img = new Image();
+      img.onload = function(){ resolve(img); };
+      img.onerror = function(){ reject(new Error('Could not read that image')); };
+      img.src = e.target.result;
+    };
+    reader.onerror = function(){ reject(new Error('Could not read that file')); };
+    reader.readAsDataURL(file);
+  });
+}
+
+function squareCropToDataUrl(img){
+  var side = Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height);
+  var sx = ((img.naturalWidth || img.width) - side) / 2;
+  var sy = ((img.naturalHeight || img.height) - side) / 2;
+  var canvas = document.createElement('canvas');
+  canvas.width = PHOTO_STORE_DIM;
+  canvas.height = PHOTO_STORE_DIM;
+  var ctx = canvas.getContext('2d');
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, sx, sy, side, side, 0, 0, PHOTO_STORE_DIM, PHOTO_STORE_DIM);
+  return canvas.toDataURL('image/jpeg', 0.87);
+}
+
+function bindPhotoField(){
+  var fileInput = document.getElementById('photoFileInput');
+  var uploadBtn = document.getElementById('btnUploadPhoto');
+  var removeBtn = document.getElementById('btnRemovePhoto');
+  var shapeSwitch = document.getElementById('photoShapeSwitch');
+  var sizeRange = document.getElementById('photoSizeRange');
+  var sizeValue = document.getElementById('photoSizeValue');
+
+  uploadBtn.addEventListener('click', function(){ fileInput.click(); });
+
+  fileInput.addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if(!file) return;
+    if(!/^image\//.test(file.type)){ showToast('Please choose an image file (JPG, PNG, or WEBP)'); return; }
+    if(file.size > PHOTO_MAX_SOURCE_BYTES){ showToast('That image is too large — please use one under 8MB'); return; }
+    readImageFile(file).then(function(img){
+      var dataUrl = squareCropToDataUrl(img);
+      var r = activeResume();
+      r.photo.dataUrl = dataUrl;
+      touch(r); save();
+      renderPhotoControls();
+      renderPreviewAndScore();
+      showToast('Photo added');
+    }).catch(function(err){
+      showToast(err.message || 'Could not process that image');
+    });
+  });
+
+  removeBtn.addEventListener('click', function(){
+    var r = activeResume();
+    r.photo.dataUrl = null;
+    touch(r); save();
+    renderPhotoControls();
+    renderPreviewAndScore();
+  });
+
+  shapeSwitch.addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-shape]');
+    if(!btn) return;
+    var r = activeResume();
+    r.photo.shape = btn.getAttribute('data-shape');
+    touch(r); save();
+    renderPhotoControls();
+    renderPreviewAndScore();
+  });
+
+  sizeRange.addEventListener('input', function(e){
+    var r = activeResume();
+    r.photo.size = parseInt(e.target.value, 10) || 96;
+    sizeValue.textContent = r.photo.size + 'px';
+    renderPreviewAndScore();
+  });
+  sizeRange.addEventListener('change', function(){
+    var r = activeResume();
+    touch(r); save();
   });
 }
 
@@ -2643,6 +2888,7 @@ function init(){
   document.getElementById('footerYear').textContent = new Date().getFullYear();
   loadState();
   bindStaticFields();
+  bindPhotoField();
   bindSkills();
   bindExperience();
   bindEducation();
