@@ -112,8 +112,27 @@ a{color:var(--primary);}
 /* ---------- Layout ---------- */
 .workspace{flex:1;display:flex;max-width:1680px;width:100%;margin:0 auto;gap:0;min-height:0;}
 .panel{min-width:0;}
-.panel-left{flex:0 0 46%;max-width:46%;border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-height:0;}
+.panel-left{flex:0 0 var(--split-left-pct,46%);max-width:var(--split-left-pct,46%);border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-height:0;}
 .panel-right{flex:1;background:var(--paper);display:flex;flex-direction:column;min-width:0;min-height:0;}
+
+/* ---------- Split-view resizer ---------- */
+.split-resizer{display:none;flex:none;width:13px;margin:0 -6px;position:relative;z-index:15;cursor:col-resize;align-items:center;justify-content:center;background:transparent;touch-action:none;}
+.workspace:not(.view-edit):not(.view-preview) .split-resizer{display:flex;}
+.split-resizer::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:1px;transform:translateX(-50%);background:var(--line);transition:background .12s ease;}
+.split-resizer:hover::before,.split-resizer.dragging::before{background:var(--primary);}
+.split-resizer:hover .split-resizer-handle,.split-resizer.dragging .split-resizer-handle,.split-resizer:focus-visible .split-resizer-handle{opacity:1;}
+.split-resizer-handle{opacity:0;transition:opacity .12s ease;display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:6px 3px;box-shadow:var(--shadow-sm);pointer-events:none;}
+.split-resizer-handle span{width:3px;height:3px;border-radius:50%;background:var(--muted);}
+.split-resizer:focus-visible{outline:none;}
+.split-resizer:focus-visible::before{background:var(--primary);width:2px;}
+.split-resizer.dragging{cursor:col-resize;}
+.split-nudges{position:absolute;top:8px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:4px;opacity:0;pointer-events:none;transition:opacity .12s ease;}
+.split-resizer:hover .split-nudges,.split-resizer:focus-visible .split-nudges,.split-resizer.dragging .split-nudges{opacity:1;pointer-events:auto;}
+.split-nudge-btn{width:20px;height:20px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink-soft);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;box-shadow:var(--shadow-sm);}
+.split-nudge-btn:hover{background:var(--primary-soft);color:var(--primary-dark);border-color:var(--primary-soft);}
+body.split-resizing{cursor:col-resize;user-select:none;}
+body.split-resizing .panel-left,body.split-resizing .panel-right{pointer-events:none;}
+@media (max-width:980px){ .split-resizer{display:none !important;} }
 
 /* mobile tabs */
 .mobile-tabs{display:none;position:sticky;top:59px;z-index:40;background:var(--surface);border-bottom:1px solid var(--line);}
@@ -623,6 +642,15 @@ a{color:var(--primary);}
       </form>
     </section>
 
+    <!-- DRAG HANDLE: resize split view -->
+    <div class="split-resizer" id="splitResizer" role="separator" aria-orientation="vertical" aria-label="Resize editor and preview panels" aria-valuemin="20" aria-valuemax="80" tabindex="0">
+      <div class="split-nudges">
+        <button type="button" class="split-nudge-btn" id="splitGrowLeft" title="Widen editor panel" aria-label="Widen editor panel">&#8594;</button>
+        <button type="button" class="split-nudge-btn" id="splitGrowRight" title="Widen preview panel" aria-label="Widen preview panel">&#8592;</button>
+      </div>
+      <div class="split-resizer-handle"><span></span><span></span><span></span></div>
+    </div>
+
     <!-- RIGHT: LIVE PREVIEW -->
     <section class="panel panel-right mobile-hide" id="panelRight" aria-label="Live resume preview and ATS score">
       <div class="preview-toolbar">
@@ -676,6 +704,7 @@ a{color:var(--primary);}
    ============================================================ */
 var STORAGE_KEY = 'walnexcv_app_v1';
 var VIEW_PREF_KEY = 'walnexcv_view_pref_v1';
+var SPLIT_WIDTH_KEY = 'walnexcv_split_width_v1';
 var FORM_MODE_KEY = 'walnexcv_form_mode_v1';
 
 var ACTION_VERBS = ["Led","Built","Launched","Drove","Delivered","Architected","Designed","Implemented","Reduced","Increased","Optimized","Streamlined","Negotiated","Spearheaded","Automated","Directed","Coordinated","Established","Improved","Generated","Managed","Developed","Executed","Transformed","Accelerated","Restructured","Mentored","Scaled","Resolved","Piloted"];
@@ -2436,6 +2465,89 @@ function bindViewToggle(){
   setView(saved);
 }
 
+function bindSplitResizer(){
+  var resizer = document.getElementById('splitResizer');
+  var workspace = document.getElementById('workspace');
+  var panelLeft = document.getElementById('panelLeft');
+  if(!resizer || !workspace || !panelLeft) return;
+
+  var MIN_PCT = 24, MAX_PCT = 76, DEFAULT_PCT = 46, STEP_PCT = 4;
+  var dragging = false, startX = 0, startPct = DEFAULT_PCT;
+
+  function currentPct(){
+    var saved;
+    try{ saved = parseFloat(localStorage.getItem(SPLIT_WIDTH_KEY)); }catch(e){}
+    return (isFinite(saved) && saved >= MIN_PCT && saved <= MAX_PCT) ? saved : DEFAULT_PCT;
+  }
+
+  function applyPct(pct){
+    pct = Math.max(MIN_PCT, Math.min(MAX_PCT, pct));
+    panelLeft.style.setProperty('--split-left-pct', pct + '%');
+    resizer.setAttribute('aria-valuenow', Math.round(pct));
+    try{ localStorage.setItem(SPLIT_WIDTH_KEY, pct); }catch(e){}
+    return pct;
+  }
+
+  function widthToPct(clientX){
+    var rect = workspace.getBoundingClientRect();
+    var pct = ((clientX - rect.left) / rect.width) * 100;
+    return pct;
+  }
+
+  function onPointerMove(e){
+    if(!dragging) return;
+    var clientX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+    applyPct(widthToPct(clientX));
+    e.preventDefault();
+  }
+  function endDrag(){
+    if(!dragging) return;
+    dragging = false;
+    resizer.classList.remove('dragging');
+    document.body.classList.remove('split-resizing');
+    document.removeEventListener('mousemove', onPointerMove);
+    document.removeEventListener('mouseup', endDrag);
+    document.removeEventListener('touchmove', onPointerMove);
+    document.removeEventListener('touchend', endDrag);
+  }
+  function startDrag(e){
+    if(!workspace.classList.contains('view-edit') && !workspace.classList.contains('view-preview')){
+      dragging = true;
+      startX = (e.touches && e.touches[0]) ? e.touches[0].clientX : e.clientX;
+      startPct = currentPct();
+      resizer.classList.add('dragging');
+      document.body.classList.add('split-resizing');
+      document.addEventListener('mousemove', onPointerMove);
+      document.addEventListener('mouseup', endDrag);
+      document.addEventListener('touchmove', onPointerMove, {passive:false});
+      document.addEventListener('touchend', endDrag);
+      e.preventDefault();
+    }
+  }
+
+  resizer.addEventListener('mousedown', startDrag);
+  resizer.addEventListener('touchstart', startDrag, {passive:false});
+  resizer.addEventListener('dblclick', function(){ applyPct(DEFAULT_PCT); });
+
+  resizer.addEventListener('keydown', function(e){
+    var pct = currentPct();
+    if(e.key === 'ArrowLeft'){ applyPct(pct - STEP_PCT); e.preventDefault(); }
+    else if(e.key === 'ArrowRight'){ applyPct(pct + STEP_PCT); e.preventDefault(); }
+    else if(e.key === 'Home'){ applyPct(MIN_PCT); e.preventDefault(); }
+    else if(e.key === 'End'){ applyPct(MAX_PCT); e.preventDefault(); }
+    else if(e.key === 'Enter' || e.key === ' '){ applyPct(DEFAULT_PCT); e.preventDefault(); }
+  });
+
+  var growLeftBtn = document.getElementById('splitGrowLeft');
+  var growRightBtn = document.getElementById('splitGrowRight');
+  if(growLeftBtn) growLeftBtn.addEventListener('click', function(e){ e.stopPropagation(); applyPct(currentPct() + STEP_PCT); });
+  if(growRightBtn) growRightBtn.addEventListener('click', function(e){ e.stopPropagation(); applyPct(currentPct() - STEP_PCT); });
+
+  resizer.setAttribute('aria-valuemin', MIN_PCT);
+  resizer.setAttribute('aria-valuemax', MAX_PCT);
+  applyPct(currentPct());
+}
+
 function bindResumeManagement(){
   document.getElementById('resumeSwitcher').addEventListener('change', function(e){
     State.activeId = e.target.value;
@@ -2544,6 +2656,7 @@ function init(){
   bindJdAnalyze();
   bindMobileTabs();
   bindViewToggle();
+  bindSplitResizer();
   bindDropdownMenus();
   bindResumeManagement();
   bindBackup();
