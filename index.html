@@ -135,7 +135,7 @@ body.split-resizing .panel-left,body.split-resizing .panel-right{pointer-events:
 @media (max-width:980px){ .split-resizer{display:none !important;} }
 
 /* mobile tabs */
-.mobile-tabs{display:none;position:sticky;top:59px;z-index:40;background:var(--surface);border-bottom:1px solid var(--line);}
+.mobile-tabs{display:none;position:sticky;top:var(--sticky-header-h,59px);z-index:40;background:var(--surface);border-bottom:1px solid var(--line);}
 .mobile-tabs-inner{display:flex;}
 .mobile-tab{flex:1;padding:11px;text-align:center;font-size:13px;font-weight:700;color:var(--muted);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;}
 .mobile-tab.active{color:var(--primary);border-bottom-color:var(--primary);}
@@ -385,16 +385,43 @@ body.split-resizing .panel-left,body.split-resizing .panel-right{pointer-events:
   .panel-left.mobile-hide,.panel-right.mobile-hide{display:none;}
   .kw-cols{grid-template-columns:1fr;}
   .brand-sub{display:none;}
-  .app-header-inner{padding:10px 14px;}
-  .form-scroll{padding:6px 16px 60px;}
-  .preview-scroll{padding:16px;}
-  .resume-sheet{padding:30px 26px;}
+  .app-header-inner{padding:8px 12px;gap:8px;}
+  .form-scroll{padding:6px 14px 60px;}
+  .preview-scroll{padding:14px;}
+  .resume-sheet{padding:26px 20px;}
   .toolbar-divider{display:none;}
   .view-group{display:none;}
+
+  /* Scrollable single-row toolbar instead of wrapping into broken rows */
+  .toolbar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;padding-bottom:3px;margin:0 -12px;padding-left:12px;padding-right:12px;width:calc(100% + 24px);}
+  .toolbar::-webkit-scrollbar{height:3px;}
+  .toolbar::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+  .toolbar-group{flex:none;}
+  .toolbar .icon-btn span.lbl{display:inline;}
+  .resume-switcher select{max-width:120px;}
+
+  /* Comfortable touch targets */
+  .icon-btn,.btn,.template-chip{min-height:38px;}
+  .btn-sm{min-height:34px;}
+  .mode-switch button,.photo-shape-switch button{padding:8px 12px;}
 }
 @media (max-width:560px){
-  .toolbar .icon-btn span.lbl{display:none;}
   .score-row{flex-direction:column;align-items:flex-start;}
+  .app-header-inner{gap:6px;}
+  .brand-name{font-size:17px;}
+  .brand-mark{width:30px;height:30px;font-size:15px;}
+
+  /* Profile photo field: stack and center on narrow phones */
+  .photo-field-body{flex-direction:column;align-items:center;text-align:center;}
+  .photo-preview-wrap{align-self:center;}
+  .photo-controls{width:100%;align-items:center;}
+  .photo-upload-row{justify-content:center;width:100%;}
+  .photo-shape-row,.photo-size-row{width:100%;max-width:280px;}
+  .photo-shape-switch{flex:1;justify-content:space-between;}
+  .photo-shape-switch button{flex:1;text-align:center;padding:8px 6px;}
+  .photo-size-row input[type=range]{max-width:none;}
+
+  .modal{max-height:85vh;overflow-y:auto;}
 }
 </style>
 </head>
@@ -2462,6 +2489,7 @@ function updateStickyOffsets(){
   var modeToolbar = document.getElementById('modeToolbar');
   var nav = document.getElementById('sectionNav');
   var headerH = header ? header.offsetHeight : 0;
+  document.documentElement.style.setProperty('--sticky-header-h', headerH + 'px');
   var mobileTabsH = (mobileTabs && getComputedStyle(mobileTabs).display !== 'none') ? mobileTabs.offsetHeight : 0;
   var modebarTop = headerH + mobileTabsH;
   var modeToolbarH = modeToolbar ? modeToolbar.offsetHeight : 0;
